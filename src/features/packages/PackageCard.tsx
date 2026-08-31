@@ -65,11 +65,12 @@ export function PackageCard({ pkg, isRefreshing }: { pkg: TrackedPackage; isRefr
     <motion.li variants={listItem} layout="position">
       <Link
         to={`/p/${pkg.id}`}
-        aria-label={`${title} — ${meta.label}`}
+        aria-label={`${title} — ${meta.label}${pkg.unread ? ' — עדכון חדש' : ''}`}
         className={cn(
-          'group relative flex items-center gap-3.5 overflow-hidden rounded-card border border-line bg-surface p-4',
+          'group relative flex items-center gap-3.5 overflow-hidden rounded-card border bg-surface p-4',
           'shadow-card transition-colors duration-150 hover:border-line-strong',
           'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+          pkg.unread ? 'border-primary/45' : 'border-line',
         )}
       >
         {/* Colour tag: the user's own way of telling packages apart at a glance. */}
@@ -79,19 +80,31 @@ export function PackageCard({ pkg, isRefreshing }: { pkg: TrackedPackage; isRefr
           style={{ background: accent }}
         />
 
-        <PackagePhoto
-          src={pkg.itemImage}
-          alt={title}
-          stage={pkg.stage}
-          maxLadderIndex={pkg.maxLadderIndex}
-          layoutId={`ring-${pkg.id}`}
-          live={!needsAction(pkg.stage) && pkg.stage !== 'DELIVERED'}
-          className="ms-1"
-        />
+        <div className="relative ms-1 shrink-0">
+          <PackagePhoto
+            src={pkg.itemImage}
+            alt={title}
+            stage={pkg.stage}
+            maxLadderIndex={pkg.maxLadderIndex}
+            layoutId={`ring-${pkg.id}`}
+            live={!needsAction(pkg.stage) && pkg.stage !== 'DELIVERED'}
+          />
+          {pkg.unread && (
+            <span
+              aria-hidden
+              className="absolute -end-0.5 -top-0.5 size-2.5 rounded-full bg-primary shadow-[0_0_0_2px_var(--color-surface)]"
+            />
+          )}
+        </div>
 
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex items-center gap-2">
             <h3 className="truncate text-[0.95rem] font-semibold">{title}</h3>
+            {pkg.unread && (
+              <span className="shrink-0 rounded-md bg-primary-soft px-1.5 py-0.5 text-[0.65rem] font-semibold text-primary">
+                חדש
+              </span>
+            )}
             {isRefreshing && <Loader2 aria-label="מתעדכן" className="size-3.5 shrink-0 animate-spin text-subtle" />}
           </div>
 

@@ -1,14 +1,23 @@
 import { useCallback, useEffect, useState } from 'react';
-import { DEFAULT_PREFS, type NotificationPrefs } from './rules';
+import { DEFAULT_PREFS, PREFS_VERSION, type NotificationPrefs } from './rules';
 
 export { DEFAULT_PREFS, type NotificationPrefs };
 
 const KEY = 'trackit.notificationPrefs';
 
+function migrate(raw: NotificationPrefs): NotificationPrefs {
+  // v2: every status change notifies. Older installs stored milestonesOnly: true
+  // as the then-default, not as a deliberate quiet-mode choice.
+  if ((raw.prefsVersion ?? 0) < 2) {
+    return { ...DEFAULT_PREFS, ...raw, milestonesOnly: false, prefsVersion: PREFS_VERSION };
+  }
+  return { ...DEFAULT_PREFS, ...raw };
+}
+
 function read(): NotificationPrefs {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? { ...DEFAULT_PREFS, ...(JSON.parse(raw) as NotificationPrefs) } : DEFAULT_PREFS;
+    return raw ? migrate(JSON.parse(raw) as NotificationPrefs) : DEFAULT_PREFS;
   } catch {
     return DEFAULT_PREFS;
   }
@@ -39,6 +48,7 @@ export function useNotificationPrefs() {
 
   useEffect(() => {
     write(prefs);
+    void import('./push').then((m) => m.syncPrefsToServer()).catch(() => undefined);
   }, [prefs]);
 
   const setPref = useCallback(<K extends keyof NotificationPrefs>(key: K, value: NotificationPrefs[K]) => {
@@ -51,8 +61,6 @@ export function useNotificationPrefs() {
     setPermission(result);
 
     if (result === 'granted') {
-      // Registering for push is Phase 3 and needs the Blaze plan, so it is
-      // imported lazily and its absence must not break the settings screen.
       try {
         const { registerForPush } = await import('./push');
         const token = await registerForPush();

@@ -13,6 +13,9 @@ import { bootstrapAuth, isFirebaseConfigured } from '../../lib/firebase';
 import { getProvider, trackAll, trackingErrorMessage } from '../tracking';
 import { derivePackageState, estimateEta, hashEvents } from '../tracking/normalize';
 import type { PackageDraft, TrackedPackage } from '../tracking/types';
+import { unreadAndFresh } from '../notifications/evaluate';
+import { loadPrefs } from '../notifications/prefs';
+import { showLocalNotification } from '../notifications/show';
 import { repositoryFor, type PackagesRepository } from './repository';
 
 interface PackagesState {
@@ -151,6 +154,8 @@ export function PackagesProvider({ children }: { children: ReactNode }) {
 
             const derived = derivePackageState(result.events, pkg.maxLadderIndex);
             const changed = hashEvents(result.events) !== hashEvents(pkg.events ?? []);
+            const after: TrackedPackage = { ...pkg, ...derived, events: result.events };
+            const { unread, fresh } = unreadAndFresh(pkg, after, loadPrefs(), changed);
 
             await repo.patch(pkg.id, {
               ...derived,
@@ -160,8 +165,15 @@ export function PackagesProvider({ children }: { children: ReactNode }) {
               ...trackerIds,
               // Only recompute the deterministic ETA when the journey moved;
               // otherwise the estimate would creep forward every poll.
-              ...(changed ? { eta: estimateEta(derived.stage, derived.lastEventAt) } : {}),
+              ...(changed ? { eta: estimateEta(derived.stage, derived.lastEventAt), unread } : {}),
+              ...(fresh.length
+                ? { notified: [...(pkg.notified ?? []), ...fresh.map((d) => d.dedupeKey)].slice(-40) }
+                : {}),
             });
+
+            if (fresh.length > 0) {
+              void Promise.all(fresh.map((d) => showLocalNotification(d)));
+            }
           }),
         );
       } catch (err) {

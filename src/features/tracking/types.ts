@@ -78,6 +78,13 @@ export interface TrackedPackage {
   ai?: AiInsight;
   /** Ship24 tracker ids created for this number, so delete can unsubscribe them. */
   ship24TrackerIds?: string[];
+  /**
+   * True until the user opens the package. Set when new tracking events arrive
+   * so the list can show a dot even if the notification was missed.
+   */
+  unread?: boolean;
+  /** Dedupe keys of alerts already sent, so the same update is never notified twice. */
+  notified?: string[];
 }
 
 /** New-package payload before it has ever been polled. */

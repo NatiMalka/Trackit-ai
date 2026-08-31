@@ -5,6 +5,7 @@ import { AppShell } from '../components/layout/AppShell';
 import { PackageCardSkeleton } from '../components/ui/Skeleton';
 import { ToastProvider } from '../components/ui/Toast';
 import { PackagesProvider } from '../features/packages/store';
+import { ForegroundPush } from '../features/notifications/ForegroundPush';
 import { PackagesPage } from './routes/PackagesPage';
 
 // The list is the entry point for almost every session, so it ships in the main
@@ -52,6 +53,7 @@ export function App() {
       <MotionConfig reducedMotion="user">
         <ToastProvider>
           <PackagesProvider>
+            <ForegroundPush />
             <a
               href="#main"
               className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[80] focus:rounded-xl focus:bg-primary focus:px-4 focus:py-2 focus:text-on-primary"

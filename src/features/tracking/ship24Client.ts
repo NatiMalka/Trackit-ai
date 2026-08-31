@@ -162,7 +162,7 @@ function pickBest(trackings: Ship24Tracking[] | undefined): Ship24Tracking | und
   return [...trackings].sort((a, b) => (b.events?.length ?? 0) - (a.events?.length ?? 0))[0];
 }
 
-function authHeaders(apiKey: string): HeadersInit {
+function authHeaders(apiKey: string): Record<string, string> {
   return {
     Authorization: `Bearer ${apiKey}`,
     'Content-Type': 'application/json',

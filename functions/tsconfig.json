@@ -27,6 +27,7 @@
     "../src/features/tracking/types.ts",
     "../src/features/tracking/ship24Client.ts",
     "../src/features/notifications/rules.ts",
+    "../src/features/notifications/evaluate.ts",
     "../src/lib/format.ts"
   ],
   // Tests run through the root Vitest setup, and must not end up in the

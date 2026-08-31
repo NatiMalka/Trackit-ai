@@ -1,6 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router';
 import { AlertCircle, PackagePlus, PackageSearch, RefreshCw } from 'lucide-react';
 import { ButtonLink, IconButton } from '../../components/ui/Button';
 import { Chip } from '../../components/ui/Chip';
@@ -178,15 +177,6 @@ export function PackagesPage() {
           </PullToRefresh>
         </>
       )}
-
-      {/* Mobile FAB. The list already has a primary action on desktop. */}
-      <Link
-        to="/add"
-        aria-label="הוסף חבילה"
-        className="fixed bottom-[calc(var(--ti-nav-h)+1rem)] end-4 z-30 grid size-14 place-items-center rounded-2xl bg-primary text-on-primary shadow-sheet transition-transform duration-150 active:scale-95 lg:hidden"
-      >
-        <PackagePlus aria-hidden className="size-6" />
-      </Link>
     </>
   );
 }

@@ -3,15 +3,13 @@ import { FieldPath, FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import {
-  assessHealth,
-  daysUntilDeadline,
   derivePackageState,
+  estimateEta,
   hashEvents,
   normalizeEvents,
-  estimateEta,
 } from '../../src/features/tracking/normalize';
-import { defaultPackageTitle } from '../../src/features/tracking/carriers';
-import { DEFAULT_PREFS, decideNotifications, type NotificationPrefs } from '../../src/features/notifications/rules';
+import { evaluatePackageNotifications, unreadAndFresh } from '../../src/features/notifications/evaluate';
+import { DEFAULT_PREFS, type NotificationPrefs } from '../../src/features/notifications/rules';
 import type { TrackedPackage } from '../../src/features/tracking/types';
 import { fetchTracking } from './ship24';
 import { SHIP24_API_KEY } from './trackPackage';
@@ -134,22 +132,25 @@ export const refreshPackages = onSchedule(
           // Still evaluated: the pickup countdown and the gone-quiet alert are
           // driven by time passing, not by a new event, so skipping them here
           // would silence the two most valuable notifications in the app.
-          notificationsSent += await notify(uid, doc.ref.path, pkg, pkg, pushTargets);
+          notificationsSent += await notify(uid, doc.ref.path, pkg, pkg, false, pushTargets);
           continue;
         }
 
         const derived = derivePackageState(events, pkg.maxLadderIndex);
         const updated: StoredPackage = { ...pkg, ...derived, events };
+        const prefs = await loadPushTarget(uid, pushTargets);
+        const { unread } = unreadAndFresh(pkg, updated, prefs, true);
 
         await doc.ref.update({
           ...derived,
           events,
           carrier: raw.carrier ?? pkg.carrier,
           lastCheckedAt: checkedAt,
+          unread,
           eta: estimateEta(derived.stage, derived.lastEventAt) ?? FieldValue.delete(),
         });
 
-        notificationsSent += await notify(uid, doc.ref.path, pkg, updated, pushTargets);
+        notificationsSent += await notify(uid, doc.ref.path, pkg, updated, true, pushTargets);
       } catch (err) {
         // A single bad tracking number must not abort the whole run.
         console.error(`[trackit] refresh failed for ${doc.ref.path}`, err);
@@ -172,32 +173,34 @@ async function notify(
   path: string,
   before: StoredPackage,
   after: StoredPackage,
+  changed: boolean,
   pushTargets: Map<string, PushTarget>,
 ): Promise<number> {
   const prefs = await loadPushTarget(uid, pushTargets);
-  if (prefs.tokens.length === 0) return 0;
-
-  const health = assessHealth(after);
-  const decisions = decideNotifications(
-    {
-      packageId: after.id,
-      title: after.nickname || after.itemName || defaultPackageTitle(after.source, after.trackingNumber),
-      previousStage: before.stage,
-      stage: after.stage,
-      daysUntilDeadline: daysUntilDeadline(after.deadlineAt),
-      daysSilent: health.daysSilent,
-      healthState: health.state,
-    },
-    prefs,
-  );
-
+  const { unread, fresh } = unreadAndFresh(before, after, prefs, changed);
+  // Unchanged polls still need pickup/stuck alerts, which unreadAndFresh skips.
   const already = new Set(before.notified ?? []);
-  const fresh = decisions.filter((d) => !already.has(d.dedupeKey));
-  if (fresh.length === 0) return 0;
+  const toSend = changed
+    ? fresh
+    : evaluatePackageNotifications(before, after, prefs).filter((d) => !already.has(d.dedupeKey));
+  const markUnread = unread || toSend.length > 0;
+  if (toSend.length === 0) {
+    if (markUnread) {
+      await getFirestore().doc(path).update({ unread: true });
+    }
+    return 0;
+  }
+
+  if (prefs.tokens.length === 0) {
+    if (markUnread) {
+      await getFirestore().doc(path).update({ unread: true });
+    }
+    return 0;
+  }
 
   const messaging = getMessaging();
 
-  for (const decision of fresh) {
+  for (const decision of toSend) {
     const response = await messaging.sendEachForMulticast({
       tokens: prefs.tokens,
       notification: { title: decision.title, body: decision.body },
@@ -233,7 +236,10 @@ async function notify(
   await getFirestore()
     .doc(path)
     // Capped so the dedupe log cannot grow forever on a long-lived package.
-    .update({ notified: [...already, ...fresh.map((d) => d.dedupeKey)].slice(-40) });
+    .update({
+      notified: [...already, ...toSend.map((d) => d.dedupeKey)].slice(-40),
+      ...(unread || toSend.length > 0 ? { unread: true } : {}),
+    });
 
-  return fresh.length;
+  return toSend.length;
 }

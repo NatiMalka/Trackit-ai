@@ -1,31 +1,38 @@
 import type { Stage } from '../tracking/stages';
+import { stageMeta } from '../tracking/stages';
 
 /**
  * Lives here rather than in `prefs.ts` so this module stays free of React and
  * browser globals: the Cloud Function scheduler imports these same rules.
  */
 export interface NotificationPrefs {
-  /** Suppress routine scans; only send the events that change what you'd do. */
+  /**
+   * When true, skip routine warehouse scans and only send the events that
+   * change what you'd do (landed, customs, out for delivery, pickup, stuck).
+   * Default is off: every new status is news.
+   */
   milestonesOnly: boolean;
   /** The return-to-sender countdown. The single highest-value alert in Israel. */
   pickupReminders: boolean;
   stuckAlerts: boolean;
+  /** Bumped when the product default changes, so old localStorage is migrated. */
+  prefsVersion?: number;
   /** FCM registration token, written back so the scheduler can target this device. */
   token?: string;
 }
 
+export const PREFS_VERSION = 2;
+
 export const DEFAULT_PREFS: NotificationPrefs = {
-  milestonesOnly: true,
+  milestonesOnly: false,
   pickupReminders: true,
   stuckAlerts: true,
+  prefsVersion: PREFS_VERSION,
 };
 
 /**
- * Which events are worth interrupting someone for.
- *
- * The reason existing trackers get muted is that they notify on every scan —
- * "processed at facility" seven times in a row. These are the only transitions
- * that change what a person would actually do.
+ * Transitions that change what a person would actually do. Used only when
+ * `milestonesOnly` is on.
  */
 export const MILESTONE_STAGES: readonly Stage[] = [
   'ARRIVED_IL',
@@ -59,35 +66,48 @@ const STAGE_COPY: Partial<Record<Stage, { title: string; body: string }>> = {
   RETURNED: { title: 'החבילה חוזרת לשולח', body: 'כדאי לפתוח בקשת החזר כספי.' },
 };
 
-interface Candidate {
+export interface NotificationCandidate {
   packageId: string;
   title: string;
   previousStage: Stage;
   stage: Stage;
+  /** New scans even when the stage label did not move. */
+  eventsChanged?: boolean;
+  eventsHash?: string;
+  latestEventText?: string;
   daysUntilDeadline?: number;
   daysSilent?: number;
   healthState?: 'normal' | 'slow' | 'stuck' | 'problem';
+}
+
+function copyFor(stage: Stage): { title: string; body: string } {
+  const special = STAGE_COPY[stage];
+  if (special) return special;
+  const meta = stageMeta(stage);
+  return { title: `עדכון: ${meta.label}`, body: meta.headline };
 }
 
 /**
  * Decides what, if anything, to send for one package. Pure and side-effect free
  * so the same rules run identically in the client and in the Cloud Function.
  */
-export function decideNotifications(c: Candidate, prefs: NotificationPrefs): NotificationDecision[] {
+export function decideNotifications(c: NotificationCandidate, prefs: NotificationPrefs): NotificationDecision[] {
   const out: NotificationDecision[] = [];
   const url = `/p/${c.packageId}`;
+  const stageMoved = c.stage !== c.previousStage;
+  const news = stageMoved || Boolean(c.eventsChanged);
 
-  // A milestone crossing, and only on the way up — a re-scan into the same stage
-  // is not news.
-  if (c.stage !== c.previousStage && MILESTONE_STAGES.includes(c.stage)) {
-    const copy = STAGE_COPY[c.stage];
-    if (copy && (!prefs.milestonesOnly || MILESTONE_STAGES.includes(c.stage))) {
+  if (news) {
+    const milestone = stageMoved && MILESTONE_STAGES.includes(c.stage);
+    if (!prefs.milestonesOnly || milestone) {
+      const copy = copyFor(c.stage);
+      const eventBit = c.latestEventText?.trim().slice(0, 140);
       out.push({
         kind: 'stage',
-        title: `${c.title} — ${copy.title}`,
-        body: copy.body,
+        title: stageMoved ? `${c.title} — ${copy.title}` : `${c.title} — עדכון חדש`,
+        body: !stageMoved && eventBit ? eventBit : copy.body,
         url,
-        dedupeKey: `${c.packageId}:stage:${c.stage}`,
+        dedupeKey: c.eventsHash ? `${c.packageId}:events:${c.eventsHash}` : `${c.packageId}:stage:${c.stage}`,
       });
     }
   }
@@ -122,4 +142,19 @@ export function decideNotifications(c: Candidate, prefs: NotificationPrefs): Not
   }
 
   return out;
+}
+
+/** Skip the "just added, first poll filled in" case — that is not news. */
+const FIRST_FILL_GRACE_MS = 1000 * 60 * 5;
+
+export function shouldAnnounceUpdate(
+  createdAt: string,
+  previousEventCount: number,
+  nextEventCount: number,
+  changed: boolean,
+): boolean {
+  if (!changed) return false;
+  const firstSighting = previousEventCount === 0 && nextEventCount > 0;
+  if (!firstSighting) return true;
+  return Date.now() - Date.parse(createdAt) > FIRST_FILL_GRACE_MS;
 }

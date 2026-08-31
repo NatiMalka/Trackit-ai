@@ -57,6 +57,11 @@ export function PackageDetailPage() {
     setColor((pkg.colorTag as PackageColor) ?? 'blue');
   }, [pkg]);
 
+  useEffect(() => {
+    if (!pkg?.unread) return;
+    void updatePackage(pkg.id, { unread: false });
+  }, [pkg?.id, pkg?.unread, updatePackage]);
+
   if (loading && !pkg) {
     return (
       <div className="space-y-4">

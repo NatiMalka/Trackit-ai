@@ -82,8 +82,8 @@ export function SettingsPage() {
           <Card className="space-y-3">
             <CardTitle>התראות</CardTitle>
             <Switch
-              label="עדכונים חשובים בלבד"
-              description="נחתה בישראל, נכנסה למכס, יצאה לחלוקה, ממתינה לאיסוף, או נתקעה. בלי כל סריקה קטנה בדרך."
+              label="רק אבני דרך"
+              description="כבוי כברירת מחדל — כל עדכון סטטוס שולח התראה. הפעלה משאירה רק נחיתה, מכס, חלוקה, איסוף ובעיות."
               checked={prefs.milestonesOnly}
               onChange={(v) => setPref('milestonesOnly', v)}
             />
@@ -105,7 +105,7 @@ export function SettingsPage() {
                 <p className="mb-2 text-xs leading-relaxed text-muted">
                   {permission === 'denied'
                     ? 'הדפדפן חוסם התראות עבור האתר. אפשר לשנות זאת בהגדרות האתר בדפדפן.'
-                    : 'כדי לקבל התראות גם כשהאפליקציה סגורה, צריך לאשר התראות בדפדפן.'}
+                    : 'כדי לקבל התראות גם כשהאפליקציה סגורה, צריך לאשר התראות. באייפון זה עובד רק אחרי התקנה למסך הבית.'}
                 </p>
                 <Button size="sm" onClick={requestPermission} disabled={permission === 'denied'}>
                   אפשר התראות

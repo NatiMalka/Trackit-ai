@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decideNotifications } from './rules';
-import { DEFAULT_PREFS } from './prefs';
+import { decideNotifications, DEFAULT_PREFS, shouldAnnounceUpdate } from './rules';
 
 const base = {
   packageId: 'abc123',
@@ -14,11 +13,29 @@ describe('decideNotifications', () => {
     expect(decideNotifications(base, DEFAULT_PREFS)).toHaveLength(0);
   });
 
-  it('stays silent on routine transit scans', () => {
-    // The reason people mute other trackers: a notification per facility scan.
-    const decisions = decideNotifications(
-      { ...base, previousStage: 'PICKED_UP', stage: 'ORIGIN_TRANSIT' },
+  it('announces a routine transit scan by default', () => {
+    const [decision] = decideNotifications(
+      { ...base, previousStage: 'PICKED_UP', stage: 'ORIGIN_TRANSIT', eventsChanged: true, eventsHash: 'h1' },
       DEFAULT_PREFS,
+    );
+    expect(decision.kind).toBe('stage');
+    expect(decision.title).toContain('עדכון');
+  });
+
+  it('announces a new scan even when the stage label did not move', () => {
+    const [decision] = decideNotifications(
+      { ...base, eventsChanged: true, eventsHash: 'scan-2', latestEventText: 'Departed sorting center' },
+      DEFAULT_PREFS,
+    );
+    expect(decision.title).toContain('עדכון חדש');
+    expect(decision.body).toContain('Departed sorting center');
+    expect(decision.dedupeKey).toBe('abc123:events:scan-2');
+  });
+
+  it('stays quiet on routine scans when milestones-only is on', () => {
+    const decisions = decideNotifications(
+      { ...base, previousStage: 'PICKED_UP', stage: 'ORIGIN_TRANSIT', eventsChanged: true, eventsHash: 'h1' },
+      { ...DEFAULT_PREFS, milestonesOnly: true },
     );
     expect(decisions).toHaveLength(0);
   });
@@ -92,5 +109,20 @@ describe('decideNotifications', () => {
     const keys = decisions.map((d) => d.dedupeKey);
     expect(new Set(keys).size).toBe(keys.length);
     expect(keys.length).toBe(3);
+  });
+});
+
+describe('shouldAnnounceUpdate', () => {
+  it('skips the first fill-in right after add', () => {
+    expect(shouldAnnounceUpdate(new Date().toISOString(), 0, 3, true)).toBe(false);
+  });
+
+  it('announces the first fill-in if the package was added a while ago', () => {
+    const created = new Date(Date.now() - 1000 * 60 * 20).toISOString();
+    expect(shouldAnnounceUpdate(created, 0, 3, true)).toBe(true);
+  });
+
+  it('announces later scans', () => {
+    expect(shouldAnnounceUpdate(new Date().toISOString(), 2, 3, true)).toBe(true);
   });
 });
