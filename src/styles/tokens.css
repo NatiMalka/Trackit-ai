@@ -1,0 +1,110 @@
+/* TrackIt AI design tokens.
+   Dark-first: :root holds the dark values, [data-theme="light"] overrides.
+   Every colour is exposed to Tailwind v4 via @theme in index.css. */
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --ti-bg: #0b0e14;
+  --ti-surface: #141821;
+  --ti-elevated: #1c2130;
+  --ti-overlay: #232838;
+  --ti-border: #262c3b;
+  --ti-border-strong: #37405480;
+
+  /* Text. Subtle is the floor: it carries timestamps and counts at 12px, so it
+     is tuned to clear 4.5:1 on the *elevated* surface, not just on the base. */
+  --ti-fg: #f2f5fa;
+  --ti-fg-muted: #9aa5b8;
+  --ti-fg-subtle: #838da0;
+
+  /* Brand: tracking blue + delivery orange */
+  --ti-primary: #2e7dff;
+  --ti-primary-hover: #4b90ff;
+  --ti-primary-soft: #2e7dff1f;
+  --ti-on-primary: #ffffff;
+  --ti-accent: #ff7a29;
+  --ti-accent-soft: #ff7a291f;
+
+  /* Status ramp. Paired with an icon + Hebrew label everywhere, never colour alone. */
+  --ti-idle: #8b95a8;
+  --ti-idle-soft: #8b95a824;
+  --ti-transit: #2e7dff;
+  --ti-transit-soft: #2e7dff24;
+  --ti-arrived: #22d3ee;
+  --ti-arrived-soft: #22d3ee24;
+  --ti-action: #ff9f1c;
+  --ti-action-soft: #ff9f1c24;
+  --ti-done: #34d399;
+  --ti-done-soft: #34d39924;
+  --ti-problem: #fb7185;
+  --ti-problem-soft: #fb718524;
+
+  --ti-ring: #2e7dff;
+  --ti-scrim: #05070bd9;
+
+  /* Elevation. Dark mode leans on borders + faint glow rather than drop shadows. */
+  --ti-shadow-card: 0 1px 0 0 #ffffff08 inset, 0 8px 24px -12px #00000099;
+  --ti-shadow-sheet: 0 -8px 48px -12px #000000cc;
+
+  /* Motion tokens - one rhythm for the whole app */
+  --ti-dur-fast: 150ms;
+  --ti-dur: 220ms;
+  --ti-dur-slow: 320ms;
+  --ti-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ti-ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+
+  /* Layout */
+  --ti-nav-h: 4.5rem;
+  --ti-radius: 1rem;
+}
+
+/* Landscape phones: a 72px bar eats a fifth of the viewport, and every screen
+   here is a scrolling list. Shrink the chrome rather than the content. */
+@media (max-height: 480px) {
+  :root {
+    --ti-nav-h: 3.25rem;
+  }
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+
+  --ti-bg: #f5f7fb;
+  --ti-surface: #ffffff;
+  --ti-elevated: #ffffff;
+  --ti-overlay: #ffffff;
+  --ti-border: #dfe4ee;
+  --ti-border-strong: #c3ccdb;
+
+  --ti-fg: #101725;
+  --ti-fg-muted: #55617a;
+  --ti-fg-subtle: #656e82;
+
+  --ti-primary: #1f66e0;
+  --ti-primary-hover: #1a58c4;
+  --ti-primary-soft: #1f66e014;
+  --ti-accent: #d95e0c;
+  --ti-accent-soft: #d95e0c14;
+
+  --ti-idle: #475569;
+  --ti-idle-soft: #4755691a;
+  --ti-transit: #1f66e0;
+  --ti-transit-soft: #1f66e01a;
+  /* cyan-700 rather than cyan-600: 600 lands at 3.7:1 on white. */
+  --ti-arrived: #0e7490;
+  --ti-arrived-soft: #0e74901a;
+  --ti-action: #b45309;
+  --ti-action-soft: #b453091a;
+  --ti-done: #047857;
+  --ti-done-soft: #0478571a;
+  --ti-problem: #be123c;
+  --ti-problem-soft: #be123c1a;
+
+  --ti-ring: #1f66e0;
+  --ti-scrim: #1b2434a6;
+
+  --ti-shadow-card: 0 1px 2px 0 #0f172a0d, 0 8px 24px -16px #0f172a26;
+  --ti-shadow-sheet: 0 -8px 48px -16px #0f172a33;
+}

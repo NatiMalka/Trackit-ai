@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="TrackIt AI">
+  <rect width="64" height="64" rx="15" fill="#0b0e14" />
+  <!-- journey arc: origin dot, flight path, destination pin -->
+  <path
+    d="M12 42C18 24 34 16 52 20"
+    fill="none"
+    stroke="#ff7a29"
+    stroke-width="3"
+    stroke-linecap="round"
+    stroke-dasharray="5 5.5"
+  />
+  <!-- package -->
+  <path d="M20 34l12-6 12 6v13l-12 6-12-6z" fill="#2e7dff" />
+  <path d="M20 34l12 6 12-6-12-6z" fill="#5b9bff" />
+  <path d="M32 40v13l12-6V34z" fill="#1f5fd6" />
+  <circle cx="12" cy="42" r="4" fill="#ff7a29" />
+</svg>

@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    // CommonJS with classic resolution, so the shared client modules — which use
+    // extensionless relative imports, as bundlers expect — compile unchanged.
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "rootDir": "..",
+    "outDir": "lib",
+    "sourceMap": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  // The domain model is shared with the client rather than duplicated: the whole
+  // point of a deterministic normalizer is that the server and the browser agree
+  // on what stage a package is in. Those modules are framework-free on purpose.
+  "include": [
+    "src/**/*.ts",
+    "../src/features/tracking/stages.ts",
+    "../src/features/tracking/normalize.ts",
+    "../src/features/tracking/carriers.ts",
+    "../src/features/tracking/types.ts",
+    "../src/features/tracking/ship24Client.ts",
+    "../src/features/notifications/rules.ts",
+    "../src/lib/format.ts"
+  ],
+  // Tests run through the root Vitest setup, and must not end up in the
+  // deployed bundle.
+  "exclude": ["src/**/*.test.ts"]
+}

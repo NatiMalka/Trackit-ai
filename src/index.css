@@ -1,0 +1,201 @@
+/* Fonts are linked from index.html instead of imported here: an @import inside
+   the app stylesheet cannot start until that stylesheet has downloaded, which
+   chains two blocking requests and pushes out first paint. */
+@import 'tailwindcss';
+@import './styles/tokens.css';
+
+@theme {
+  --font-display: 'Rubik', system-ui, sans-serif;
+  --font-sans: 'Heebo', system-ui, sans-serif;
+
+  --color-bg: var(--ti-bg);
+  --color-surface: var(--ti-surface);
+  --color-elevated: var(--ti-elevated);
+  --color-overlay: var(--ti-overlay);
+  --color-line: var(--ti-border);
+  --color-line-strong: var(--ti-border-strong);
+
+  --color-fg: var(--ti-fg);
+  --color-muted: var(--ti-fg-muted);
+  --color-subtle: var(--ti-fg-subtle);
+
+  --color-primary: var(--ti-primary);
+  --color-primary-hover: var(--ti-primary-hover);
+  --color-primary-soft: var(--ti-primary-soft);
+  --color-on-primary: var(--ti-on-primary);
+  --color-accent: var(--ti-accent);
+  --color-accent-soft: var(--ti-accent-soft);
+
+  --color-st-idle: var(--ti-idle);
+  --color-st-idle-soft: var(--ti-idle-soft);
+  --color-st-transit: var(--ti-transit);
+  --color-st-transit-soft: var(--ti-transit-soft);
+  --color-st-arrived: var(--ti-arrived);
+  --color-st-arrived-soft: var(--ti-arrived-soft);
+  --color-st-action: var(--ti-action);
+  --color-st-action-soft: var(--ti-action-soft);
+  --color-st-done: var(--ti-done);
+  --color-st-done-soft: var(--ti-done-soft);
+  --color-st-problem: var(--ti-problem);
+  --color-st-problem-soft: var(--ti-problem-soft);
+
+  --radius-card: var(--ti-radius);
+  --shadow-card: var(--ti-shadow-card);
+  --shadow-sheet: var(--ti-shadow-sheet);
+
+  --ease-out-ti: var(--ti-ease-out);
+}
+
+@keyframes ti-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Slow breathing pulse on the current stage node, so "live" reads without being noisy. */
+@keyframes ti-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0;
+    /* Kept modest: the halo also renders behind the 88px detail ring, where a
+       larger scale reads as a rendering artefact rather than a heartbeat. */
+    transform: scale(1.45);
+  }
+}
+
+@layer base {
+  * {
+    /* Logical properties throughout means RTL needs no per-component work. */
+    min-inline-size: 0;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    margin: 0;
+    background: var(--ti-bg);
+    color: var(--ti-fg);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.6;
+    font-synthesis-weight: none;
+    -webkit-font-smoothing: antialiased;
+    touch-action: manipulation;
+    overscroll-behavior-y: none;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    line-height: 1.25;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  /* Tabular figures for every number that sits in a column or ticks over. */
+  time,
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Latin strings (tracking numbers, carrier codes) inside RTL text. */
+  .ltr {
+    direction: ltr;
+    unicode-bidi: isolate;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  :where(a, button, input, textarea, select, [tabindex]):focus-visible {
+    outline: 2px solid var(--ti-ring);
+    outline-offset: 2px;
+    border-radius: 0.5rem;
+  }
+
+  ::selection {
+    background: var(--ti-primary-soft);
+  }
+
+  /* Scrollbars that don't look like Windows 98 in dark mode */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--ti-border);
+    border-radius: 99px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+}
+
+@layer utilities {
+  .surface-card {
+    background: var(--ti-surface);
+    border: 1px solid var(--ti-border);
+    border-radius: var(--ti-radius);
+    box-shadow: var(--ti-shadow-card);
+  }
+
+  .safe-b {
+    padding-block-end: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-t {
+    padding-block-start: env(safe-area-inset-top, 0px);
+  }
+
+  /* Marks a value as tappable-sized without needing a wrapper element. */
+  .tap {
+    min-block-size: 2.75rem;
+    min-inline-size: 2.75rem;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
