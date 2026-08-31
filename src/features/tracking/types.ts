@@ -54,6 +54,13 @@ export interface TrackedPackage {
   nickname?: string;
   /** What is inside, either typed by the user or inferred from pasted text. */
   itemName?: string;
+  /**
+   * Product photo so the list is recognizable at a glance.
+   * Data URL from the camera/gallery, or a CDN URL from an AliExpress import.
+   */
+  itemImage?: string;
+  /** AliExpress order id, when the card was imported from a connected account. */
+  aliexpressOrderId?: string;
   /** Token key from PACKAGE_COLORS, used for the card accent. */
   colorTag?: string;
   stage: Stage;
@@ -75,7 +82,7 @@ export interface TrackedPackage {
 
 /** New-package payload before it has ever been polled. */
 export type PackageDraft = Pick<TrackedPackage, 'trackingNumber' | 'carrier' | 'source'> &
-  Partial<Pick<TrackedPackage, 'nickname' | 'itemName' | 'colorTag'>>;
+  Partial<Pick<TrackedPackage, 'nickname' | 'itemName' | 'itemImage' | 'aliexpressOrderId' | 'colorTag'>>;
 
 export const PACKAGE_COLORS = ['blue', 'orange', 'violet', 'emerald', 'rose', 'cyan'] as const;
 export type PackageColor = (typeof PACKAGE_COLORS)[number];

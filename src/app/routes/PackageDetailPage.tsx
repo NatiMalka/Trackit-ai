@@ -24,9 +24,9 @@ import { ActionCard } from '../../features/packages/ActionCard';
 import { ChatSheet } from '../../features/packages/ChatSheet';
 import { DeliveryCelebration } from '../../features/packages/DeliveryCelebration';
 import { InsightCard } from '../../features/packages/InsightCard';
+import { PackagePhoto, PackagePhotoPicker } from '../../features/packages/PackagePhoto';
 import { RouteArc } from '../../features/packages/RouteArc';
 import { StageLadder } from '../../features/packages/StageLadder';
-import { StageRing } from '../../features/packages/StageRing';
 import { Timeline } from '../../features/packages/Timeline';
 import { usePackage, usePackages } from '../../features/packages/store';
 import { carrierInfo, defaultPackageTitle, SOURCE_LABEL } from '../../features/tracking/carriers';
@@ -46,12 +46,14 @@ export function PackageDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [nickname, setNickname] = useState('');
   const [itemName, setItemName] = useState('');
+  const [itemImage, setItemImage] = useState('');
   const [color, setColor] = useState<PackageColor>('blue');
 
   useEffect(() => {
     if (!pkg) return;
     setNickname(pkg.nickname ?? '');
     setItemName(pkg.itemName ?? '');
+    setItemImage(pkg.itemImage ?? '');
     setColor((pkg.colorTag as PackageColor) ?? 'blue');
   }, [pkg]);
 
@@ -105,6 +107,8 @@ export function PackageDetailPage() {
     await updatePackage(pkg.id, {
       nickname: nickname.trim() || undefined,
       itemName: itemName.trim() || undefined,
+      // Empty string clears a stored photo; undefined would leave the old one.
+      itemImage: itemImage.trim() || '',
       colorTag: color,
     });
     setEditOpen(false);
@@ -143,29 +147,42 @@ export function PackageDetailPage() {
           </div>
         </div>
 
-        {/* The ring morphs from the list card, so entering feels like zooming in. */}
-        <header className="flex items-center gap-4">
-          <StageRing
-            stage={pkg.stage}
-            maxLadderIndex={pkg.maxLadderIndex}
-            size={88}
-            layoutId={`ring-${pkg.id}`}
-            live={pkg.stage !== 'DELIVERED' && pkg.stage !== 'RETURNED'}
-          />
-          <div className="min-w-0 flex-1">
-            <h1 className="font-display text-xl font-bold leading-tight">{title}</h1>
-            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-              <Tag>{carrier.name}</Tag>
-              <Tag>{SOURCE_LABEL[pkg.source]}</Tag>
+        {/* Photo (or ring) morphs from the list card, so entering feels like zooming in. */}
+        <header className="relative overflow-hidden rounded-card border border-line bg-surface p-4">
+          {pkg.itemImage?.trim() && (
+            <img
+              src={pkg.itemImage}
+              alt=""
+              aria-hidden
+              decoding="async"
+              className="pointer-events-none absolute inset-0 size-full scale-125 object-cover opacity-30 blur-2xl"
+            />
+          )}
+          <div className="relative flex items-center gap-4">
+            <PackagePhoto
+              src={pkg.itemImage}
+              alt={title}
+              size="lg"
+              stage={pkg.stage}
+              maxLadderIndex={pkg.maxLadderIndex}
+              layoutId={`ring-${pkg.id}`}
+              live={pkg.stage !== 'DELIVERED' && pkg.stage !== 'RETURNED'}
+            />
+            <div className="min-w-0 flex-1">
+              <h1 className="font-display text-xl font-bold leading-tight">{title}</h1>
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                <Tag>{carrier.name}</Tag>
+                <Tag>{SOURCE_LABEL[pkg.source]}</Tag>
+              </div>
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="ltr tnum mt-1.5 flex items-center gap-1.5 text-xs text-subtle hover:text-muted"
+              >
+                <Copy aria-hidden className="size-3.5" />
+                {prettyTracking(pkg.trackingNumber)}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="ltr tnum mt-1.5 flex items-center gap-1.5 text-xs text-subtle hover:text-muted"
-            >
-              <Copy aria-hidden className="size-3.5" />
-              {prettyTracking(pkg.trackingNumber)}
-            </button>
           </div>
         </header>
 
@@ -217,6 +234,7 @@ export function PackageDetailPage() {
             onChange={(e) => setItemName(e.target.value)}
             placeholder="למשל: אוזניות בלוטות'"
           />
+          <PackagePhotoPicker value={itemImage} onChange={(next) => setItemImage(next ?? '')} />
           <fieldset className="space-y-1.5">
             <legend className="text-sm font-medium text-muted">צבע לזיהוי מהיר</legend>
             <div className="flex gap-2">

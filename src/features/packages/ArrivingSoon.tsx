@@ -41,8 +41,15 @@ export function ArrivingSoon({ packages }: { packages: TrackedPackage[] }) {
       className="mb-4 overflow-hidden rounded-card border border-line bg-gradient-to-bl from-primary-soft to-transparent p-4"
     >
       <div className="flex items-start gap-3">
-        <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
-          {actionable.length > 0 ? (
+        <div className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-primary-soft text-primary">
+          {spotlight?.itemImage ? (
+            <img
+              src={spotlight.itemImage}
+              alt=""
+              decoding="async"
+              className="size-full object-cover"
+            />
+          ) : actionable.length > 0 ? (
             <PackageOpen aria-hidden strokeWidth={1.75} className="size-5" />
           ) : (
             <CalendarClock aria-hidden strokeWidth={1.75} className="size-5" />

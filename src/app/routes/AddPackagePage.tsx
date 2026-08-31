@@ -12,6 +12,7 @@ import { enterFrom, fadeUp, listContainer, listItem, spring, useEnterAnimation }
 import { parseAnything, type ParsedPackage } from '../../features/ai/insights';
 import { isAiAvailable } from '../../features/ai/gemini';
 import { usePackages } from '../../features/packages/store';
+import { PackagePhotoPicker, PackagePhotoThumbPicker } from '../../features/packages/PackagePhoto';
 import { carrierInfo, extractTrackingNumbers, SOURCE_LABEL } from '../../features/tracking/carriers';
 import { packageCount, prettyTracking } from '../../lib/format';
 import { COLOR_SWATCH, PACKAGE_COLORS, type PackageColor } from '../../features/tracking/types';
@@ -49,6 +50,7 @@ export function AddPackagePage() {
   const [parsing, setParsing] = useState(false);
   const [found, setFound] = useState<ParsedPackage[] | null>(null);
   const [nickname, setNickname] = useState('');
+  const [photos, setPhotos] = useState<Record<string, string>>({});
   const [color, setColor] = useState<PackageColor>('blue');
   const [saving, setSaving] = useState(false);
   const enter = useEnterAnimation();
@@ -105,6 +107,7 @@ export function AddPackagePage() {
             // AI-derived item names instead of forcing one label on all of them.
             nickname: found.length === 1 ? nickname.trim() || undefined : undefined,
             itemName: p.itemName,
+            itemImage: photos[p.trackingNumber]?.trim() || undefined,
             colorTag: found.length === 1 ? color : PACKAGE_COLORS[i % PACKAGE_COLORS.length],
           }),
         ),
@@ -188,12 +191,33 @@ export function AddPackagePage() {
                     layout
                     className="flex items-center gap-3 rounded-card border border-line bg-surface p-3.5"
                   >
-                    <div
-                      aria-hidden
-                      className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary"
-                    >
-                      <PackagePlus className="size-5" />
-                    </div>
+                    {found.length > 1 ? (
+                      <PackagePhotoThumbPicker
+                        value={photos[p.trackingNumber]}
+                        onChange={(next) =>
+                          setPhotos((prev) => {
+                            const copy = { ...prev };
+                            if (next?.trim()) copy[p.trackingNumber] = next;
+                            else delete copy[p.trackingNumber];
+                            return copy;
+                          })
+                        }
+                      />
+                    ) : photos[p.trackingNumber] ? (
+                      <img
+                        src={photos[p.trackingNumber]}
+                        alt=""
+                        decoding="async"
+                        className="size-10 shrink-0 rounded-xl object-cover"
+                      />
+                    ) : (
+                      <div
+                        aria-hidden
+                        className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary"
+                      >
+                        <PackagePlus className="size-5" />
+                      </div>
+                    )}
                     <div className="min-w-0 flex-1">
                       <p className="ltr tnum truncate text-sm font-semibold">{prettyTracking(p.trackingNumber)}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -219,6 +243,18 @@ export function AddPackagePage() {
                     onChange={(e) => setNickname(e.target.value)}
                     placeholder={found[0].itemName || 'למשל: אוזניות לאבא'}
                     hint="עוזר לזהות את החבילה ברשימה בלי לזכור מספרים."
+                  />
+                  <PackagePhotoPicker
+                    value={photos[found[0].trackingNumber]}
+                    onChange={(next) =>
+                      setPhotos((prev) => {
+                        const key = found[0].trackingNumber;
+                        const copy = { ...prev };
+                        if (next?.trim()) copy[key] = next;
+                        else delete copy[key];
+                        return copy;
+                      })
+                    }
                   />
                   <ColorPicker value={color} onChange={setColor} />
                 </motion.div>

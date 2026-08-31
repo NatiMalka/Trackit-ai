@@ -29,8 +29,9 @@ export function StageRing({
   const meta = stageMeta(stage);
   const tone = toneClass(stage);
   const progress = ladderProgress(stage, maxLadderIndex);
-  const stroke = size >= 80 ? 4 : 3;
+  const stroke = size >= 80 ? 4 : size >= 40 ? 3 : 2;
   const r = (size - stroke) / 2;
+  const iconClass = size >= 80 ? 'size-8' : size >= 48 ? 'size-5' : size >= 32 ? 'size-3.5' : 'size-2.5';
   const circumference = 2 * Math.PI * r;
 
   return (
@@ -84,7 +85,7 @@ export function StageRing({
         className={cn('absolute grid place-items-center rounded-full', tone.bg, tone.fg)}
         style={{ inset: stroke * 2 }}
       >
-        <StageIcon stage={stage} className={size >= 80 ? 'size-8' : 'size-5'} />
+        <StageIcon stage={stage} className={iconClass} />
       </div>
 
       <span className="sr-only">{meta.label}</span>

@@ -188,6 +188,8 @@ export function PackagesProvider({ children }: { children: ReactNode }) {
         source: draft.source,
         nickname: draft.nickname,
         itemName: draft.itemName,
+        itemImage: draft.itemImage,
+        aliexpressOrderId: draft.aliexpressOrderId,
         colorTag: draft.colorTag,
         stage: 'UNKNOWN',
         maxLadderIndex: 0,

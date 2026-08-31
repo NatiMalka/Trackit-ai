@@ -18,7 +18,7 @@ export function Skeleton({ className }: { className?: string }) {
 export function PackageCardSkeleton() {
   return (
     <div className="surface-card flex items-center gap-4 p-4">
-      <Skeleton className="size-14 shrink-0 rounded-full" />
+      <Skeleton className="size-14 shrink-0 rounded-2xl" />
       <div className="flex-1 space-y-2.5">
         <Skeleton className="h-4 w-2/5" />
         <Skeleton className="h-3.5 w-4/5" />

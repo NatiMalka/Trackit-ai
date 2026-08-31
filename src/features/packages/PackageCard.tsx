@@ -8,7 +8,7 @@ import { carrierInfo, defaultPackageTitle } from '../tracking/carriers';
 import { assessHealth, daysUntilDeadline } from '../tracking/normalize';
 import { isTerminal, needsAction, stageMeta, toneClass } from '../tracking/stages';
 import { COLOR_SWATCH, type PackageColor, type TrackedPackage } from '../tracking/types';
-import { StageRing } from './StageRing';
+import { PackagePhoto } from './PackagePhoto';
 
 function HealthBadge({ pkg }: { pkg: TrackedPackage }) {
   const health = assessHealth(pkg);
@@ -79,7 +79,9 @@ export function PackageCard({ pkg, isRefreshing }: { pkg: TrackedPackage; isRefr
           style={{ background: accent }}
         />
 
-        <StageRing
+        <PackagePhoto
+          src={pkg.itemImage}
+          alt={title}
           stage={pkg.stage}
           maxLadderIndex={pkg.maxLadderIndex}
           layoutId={`ring-${pkg.id}`}
