@@ -1,9 +1,9 @@
 /**
- * Rasterises the app icon into every size the manifest and iOS need.
- * Run with `npm run icons` after editing public/icons/favicon.svg.
+ * Rasterises icon.jpg into every size the manifest and iOS need.
+ * Run with `npm run icons` after replacing icon.jpg.
  *
- * Maskable variants get extra padding because Android crops icons to an
- * arbitrary shape and will clip anything sitting in the outer ~10%.
+ * Home-screen icons are opaque and full-bleed. iOS fills transparent pixels
+ * with white, which is how a rounded PNG turns into a white border.
  */
 import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -11,42 +11,53 @@ import path from 'node:path';
 import sharp from 'sharp';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const src = path.join(root, 'icon.jpg');
 const outDir = path.join(root, 'public', 'icons');
 
-const BG = '#0b0e14';
+const NAVY = { r: 10, g: 14, b: 39, alpha: 1 };
 
-// Explicit width/height, not just a viewBox: librsvg falls back to the
-// intrinsic size and the mark comes out microscopic without them.
-const mark = (size, scale) => `
-<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64">
-  <g transform="translate(32 32) scale(${scale}) translate(-32 -32)">
-    <path d="M12 42C18 24 34 16 52 20" fill="none" stroke="#ff7a29" stroke-width="3"
-          stroke-linecap="round" stroke-dasharray="5 5.5"/>
-    <path d="M20 34l12-6 12 6v13l-12 6-12-6z" fill="#2e7dff"/>
-    <path d="M20 34l12 6 12-6-12-6z" fill="#5b9bff"/>
-    <path d="M32 40v13l12-6V34z" fill="#1f5fd6"/>
-    <circle cx="12" cy="42" r="4" fill="#ff7a29"/>
-  </g>
-</svg>`;
+async function artwork() {
+  const trimmed = await sharp(src)
+    .rotate()
+    .trim({ threshold: 18 })
+    .toBuffer({ resolveWithObject: true });
 
-async function render({ name, size, scale, radius }) {
-  const art = await sharp(Buffer.from(mark(size, scale))).png().toBuffer();
+  const { width, height } = trimmed.info;
+  const side = Math.max(width, height);
+  return sharp(trimmed.data)
+    .extend({
+      top: Math.floor((side - height) / 2),
+      bottom: Math.ceil((side - height) / 2),
+      left: Math.floor((side - width) / 2),
+      right: Math.ceil((side - width) / 2),
+      background: NAVY,
+    })
+    .png()
+    .toBuffer();
+}
 
-  const rounded =
-    radius > 0
-      ? Buffer.from(
-          `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-             <rect width="${size}" height="${size}" rx="${radius}" fill="${BG}"/>
-           </svg>`,
-        )
-      : Buffer.from(
-          `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-             <rect width="${size}" height="${size}" fill="${BG}"/>
-           </svg>`,
-        );
+/**
+ * Full-bleed opaque PNG. `zoom` > 1 crops in so the mark fills the tile.
+ * Never round or leave alpha — iOS paints missing pixels white.
+ */
+async function render({ name, size, zoom, pad }, art) {
+  const inner = Math.max(1, Math.round(size * (1 - pad * 2)));
+  const scaled = Math.round(inner * zoom);
+  const left = Math.max(0, Math.round((scaled - inner) / 2));
+  const top = left;
 
-  const buf = await sharp(rounded)
-    .composite([{ input: art, blend: 'over' }])
+  const mark = await sharp(art)
+    .resize(scaled, scaled, { fit: 'cover', position: 'centre' })
+    .extract({ left, top, width: inner, height: inner })
+    .png()
+    .toBuffer();
+
+  const buf = await sharp({
+    create: { width: size, height: size, channels: 3, background: NAVY },
+  })
+    .composite([{ input: mark, gravity: 'centre' }])
+    .flatten({ background: NAVY })
+    .removeAlpha()
     .png({ compressionLevel: 9 })
     .toBuffer();
 
@@ -54,16 +65,22 @@ async function render({ name, size, scale, radius }) {
   return name;
 }
 
+await mkdir(outDir, { recursive: true });
+const art = await artwork();
+
 const targets = [
-  { name: 'icon-192.png', size: 192, scale: 1, radius: 44 },
-  { name: 'icon-512.png', size: 512, scale: 1, radius: 118 },
-  // Full-bleed square + inset artwork so Android's mask cannot clip the mark.
-  { name: 'maskable-192.png', size: 192, scale: 0.72, radius: 0 },
-  { name: 'maskable-512.png', size: 512, scale: 0.72, radius: 0 },
-  { name: 'apple-touch-icon.png', size: 180, scale: 1, radius: 0 },
-  { name: 'favicon-32.png', size: 32, scale: 1, radius: 6 },
+  // Opaque squares iOS uses for Add to Home Screen. New names bust its cache.
+  { name: 'apple-touch-180.png', size: 180, zoom: 1.12, pad: 0 },
+  { name: 'apple-touch-192.png', size: 192, zoom: 1.12, pad: 0 },
+  { name: 'apple-touch-512.png', size: 512, zoom: 1.12, pad: 0 },
+  { name: 'icon-192.png', size: 192, zoom: 1.12, pad: 0 },
+  { name: 'icon-512.png', size: 512, zoom: 1.12, pad: 0 },
+  { name: 'maskable-192.png', size: 192, zoom: 1, pad: 0.12 },
+  { name: 'maskable-512.png', size: 512, zoom: 1, pad: 0.12 },
+  { name: 'favicon-32.png', size: 32, zoom: 1.08, pad: 0 },
 ];
 
-await mkdir(outDir, { recursive: true });
-const written = await Promise.all(targets.map(render));
-console.log(`icons written: ${written.join(', ')}`);
+const written = await Promise.all(targets.map((t) => render(t, art)));
+// Keep the previous filename so a cached HTML link still gets the full-bleed art.
+await writeFile(path.join(outDir, 'apple-touch-icon.png'), await sharp(path.join(outDir, 'apple-touch-180.png')).png().toBuffer());
+console.log(`icons written: ${written.join(', ')}, apple-touch-icon.png`);

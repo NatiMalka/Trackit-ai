@@ -84,7 +84,7 @@ export function AppShell() {
       {/* Sidebar from 1024px, bottom bar below. */}
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-1 border-e border-line bg-surface p-4 lg:flex">
         <div className="mb-6 flex items-center gap-2.5 px-2 pt-2">
-          <img src="/icons/favicon.svg" alt="" aria-hidden className="size-9 rounded-xl" />
+          <img src="/icons/apple-touch-192.png" alt="" aria-hidden className="size-9 rounded-xl" />
           <div className="leading-tight">
             <p className="font-display text-base font-semibold">TrackIt AI</p>
             <p className="text-xs text-subtle">מעקב חבילות חכם</p>
