@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
 import { useState } from 'react';
-import { Cloud, Copy, Database, Download, Moon, Sparkles, Sun, TestTube2, Truck } from 'lucide-react';
+import { Bell, Cloud, Copy, Database, Download, Moon, Sparkles, Sun, TestTube2, Truck } from 'lucide-react';
 import { Button, IconButton } from '../../components/ui/Button';
 import { Card, CardTitle } from '../../components/ui/Card';
 import { Switch } from '../../components/ui/Field';
@@ -35,6 +35,7 @@ export function SettingsPage() {
   const { prefs, setPref, permission, requestPermission } = useNotificationPrefs();
   const { toast } = useToast();
   const [showDemos, setShowDemos] = useState(false);
+  const [testingPush, setTestingPush] = useState(false);
 
   const provider = getProvider();
 
@@ -109,6 +110,45 @@ export function SettingsPage() {
                 </p>
                 <Button size="sm" onClick={requestPermission} disabled={permission === 'denied'}>
                   אפשר התראות
+                </Button>
+              </div>
+            )}
+
+            {permission === 'granted' && (
+              <div className="rounded-xl bg-elevated p-3">
+                <p className="mb-2 text-xs leading-relaxed text-muted">
+                  שולח התראת בדיקה בעוד כ־10 שניות. סגור את האפליקציה מיד אחרי הלחיצה — באייפון הבאנר
+                  האמיתי מופיע רק כשהאפליקציה לא פתוחה.
+                </p>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  loading={testingPush}
+                  icon={<Bell className="size-4" />}
+                  onClick={() => {
+                    void (async () => {
+                      setTestingPush(true);
+                      try {
+                        const { registerForPush, requestTestPush } = await import('../../features/notifications/push');
+                        const token = await registerForPush();
+                        if (!token) {
+                          toast('לא הצלחנו לרשום את המכשיר. סגור לגמרי ופתח מחדש מהמסך הבית.', {
+                            kind: 'error',
+                          });
+                          return;
+                        }
+                        toast('סגור את האפליקציה עכשיו — ההתראה תגיע בעוד כ־10 שניות', { kind: 'info' });
+                        await requestTestPush();
+                      } catch (err) {
+                        const message = err instanceof Error ? err.message : '';
+                        toast(message || 'שליחת הבדיקה נכשלה. נסה שוב אחרי כמה שניות.', { kind: 'error' });
+                      } finally {
+                        setTestingPush(false);
+                      }
+                    })();
+                  }}
+                >
+                  שלח התראת בדיקה
                 </Button>
               </div>
             )}

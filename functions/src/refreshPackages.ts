@@ -22,8 +22,8 @@ if (getApps().length === 0) initializeApp();
  */
 const TERMINAL = new Set(['DELIVERED', 'RETURNED']);
 
-/** Don't re-poll a package the app already refreshed in the last few hours. */
-const MIN_AGE_MS = 1000 * 60 * 60 * 4;
+/** Skip a package the open app already refreshed in the last few minutes. */
+const MIN_AGE_MS = 1000 * 60 * 4;
 
 /** Ship24 bills per call, so a runaway fan-out is a financial bug, not just a slow one. */
 const MAX_PER_RUN = 400;
@@ -48,7 +48,7 @@ type PushTarget = NotificationPrefs & { tokens: string[] };
 
 /**
  * One read per user per run, not per package: a user with a dozen packages
- * would otherwise re-read the same preferences a dozen times an hour.
+ * would otherwise re-read the same preferences on every package in the run.
  */
 async function loadPushTarget(uid: string, cache: Map<string, PushTarget>): Promise<PushTarget> {
   const cached = cache.get(uid);
@@ -73,12 +73,14 @@ function isDeadToken(code: string | undefined): boolean {
 /**
  * Polls every active package and writes back only what changed.
  *
- * Hourly rather than continuous: carriers themselves scan a parcel a handful of
- * times a day, so anything more frequent spends money to learn nothing.
+ * Every 5 minutes: Ship24's per-shipment plan charges when a tracker is created,
+ * not per refresh, and Cloud Scheduler/Functions stay inside the free tier at
+ * this volume. MIN_AGE is 4 minutes so each tick actually picks packages up
+ * instead of waiting out the previous run.
  */
 export const refreshPackages = onSchedule(
   {
-    schedule: 'every 60 minutes',
+    schedule: 'every 5 minutes',
     timeZone: 'Asia/Jerusalem',
     region: 'europe-west1',
     secrets: [SHIP24_API_KEY],

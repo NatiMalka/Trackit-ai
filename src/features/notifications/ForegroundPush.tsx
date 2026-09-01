@@ -21,7 +21,7 @@ export function ForegroundPush() {
 
   // Registration only ever ran from the Settings button, so anyone who had
   // granted permission before that flow existed - or whose token quietly
-  // rotated - kept the local, in-app banner forever but never got the hourly
+  // rotated - kept the local, in-app banner forever but never got the scheduled
   // server push that fires while the app is closed. Re-running this on every
   // load (once auth has a uid to key the Firestore doc on) is what actually
   // turns "background refresh" on for those installs; getToken() is a cheap
@@ -31,7 +31,7 @@ export function ForegroundPush() {
     if (!uid) return;
     void import('./push')
       .then(({ registerForPush }) => registerForPush())
-      .catch(() => undefined);
+      .catch((err) => console.warn('[trackit] background push register skipped', err));
   }, [uid]);
 
   return null;

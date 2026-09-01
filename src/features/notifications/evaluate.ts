@@ -8,7 +8,7 @@ import {
   type NotificationPrefs,
 } from './rules';
 
-/** Shared by the in-app poller and the hourly Cloud Function. */
+/** Shared by the in-app poller and the scheduled Cloud Function. */
 export function evaluatePackageNotifications(
   before: TrackedPackage,
   after: TrackedPackage,

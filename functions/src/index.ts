@@ -6,3 +6,4 @@ setGlobalOptions({ region: 'europe-west1', maxInstances: 10 });
 
 export { trackPackage } from './trackPackage';
 export { refreshPackages } from './refreshPackages';
+export { sendTestPush } from './sendTestPush';
